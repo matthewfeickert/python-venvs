@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "development"
+version = "0.1.0"
+description = "Environment for Python software development"
+authors = ["Matthew Feickert <matthew.feickert@cern.ch>"]
+license = "BSD-3-Clause"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+pre-commit = "^1.14"
+pytest = "^4.1"
+
+[tool.poetry.dev-dependencies]
+black = { version = "*", allows-prereleases = true }
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
