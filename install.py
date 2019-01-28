@@ -5,6 +5,39 @@ import subprocess
 import pathlib
 
 
+def install_poetry():
+    """
+    Install Poetry if it is not already installed
+    """
+    try:
+        # TODO: Use a more POSIX method of which
+        command = 'which poetry'.split()
+        subprocess.run(command, check=True)
+    except subprocess.CalledProcessError as e:
+        print('# Installing Poetry\n')
+        print(
+            '# curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python3'
+        )
+        # Need to split response across
+        command_curl_poetry = 'curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py'.split()
+        # curl_poetry = subprocess.run(command_curl_poetry, stdout=subprocess.PIPE)
+        curl_poetry = subprocess.Popen(command_curl_poetry, stdout=subprocess.PIPE)
+        # print(curl_poetry)
+
+        # install_poetry = 'curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python3'.split()
+        # print(install_poetry)
+        # install_poetry = subprocess.run(
+        install_poetry = subprocess.Popen(
+            ['python3'], stdin=curl_poetry.stdout, stdout=subprocess.PIPE
+        )
+        # Allow curl_poetry to receive a SIGPIPE if process_wc exits.
+        curl_poetry.stdout.close()
+        install_poetry.communicate()
+
+        print('\nRun: source {HOME}/.poetry/env'.format(HOME=os.environ['HOME']))
+    return 0
+
+
 def make_venv_base_dir(path):
     """
     Make the venv directory to keep things clean
@@ -74,6 +107,7 @@ def install_venv(venv_name, path):
 def main():
     # venvs_dir_path = make_venv_base_dir('test')
     # venvs_dir_path = make_venv_base_dir('~/test')
+    install_poetry()
     venvs_dir_path = make_venv_base_dir('/data/test')
     create_venv('data-science', venvs_dir_path)
     install_venv('data-science', venvs_dir_path)
