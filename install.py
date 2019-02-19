@@ -125,6 +125,8 @@ def create_config(config_name='config.json'):
 
     with open(config_name, 'w') as config_json:
         json.dump(config, config_json)
+
+    print(f'\n# Created python-venvs configuration file: {config_name}')
     return 0
 
 
@@ -132,7 +134,8 @@ def main():
     if not os.path.isfile('config.json'):
         install_poetry()
         create_config()
-        print('\n# Please run\n# source $HOME/.bashrc\n')
+        # TODO: Add check for this first
+        print('\n# Please run: source $HOME/.bashrc\n')
         exit(0)
     else:
         with open('config.json') as config:
