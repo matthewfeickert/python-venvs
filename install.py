@@ -37,7 +37,7 @@ def install_poetry():
 
         HOME = os.environ['HOME']
         with open(f'{HOME}/.bashrc', 'a') as bashrc:
-            bashrc.write(f'\n# Added for Poetry\nsource {HOME}/.poetry/env\n')
+            bashrc.write('\n# Added for Poetry\nsource $HOME/.poetry/env\n')
     return 0
 
 
@@ -67,11 +67,22 @@ def create_venv(venv_name, path):
         path `str`
     """
     os.chdir(path)
-    command = f'python3 -m venv {venv_name}'.split()
-    subprocess.run(command)
+    if not os.path.isdir(venv_name):
+        command = f'python3 -m venv {venv_name}'.split()
+        subprocess.run(command)
+    else:
+        print(f'\n# ERROR: virtual environment {venv_name} already exists\n')
+        exit(1)
 
 
 def install_venv(venv_name, path, __PYTHONVENVS_DIR):
+    git_repo_path = __PYTHONVENVS_DIR + '/venvs/' + venv_name
+    if not os.path.isdir(git_repo_path):
+        print(
+            f'\n# ERROR: {venv_name} is not an environment in python-venvs\n         Please check GitHub\n'
+        )
+        exit(1)
+
     create_venv(venv_name, path)
 
     os.chdir(path)
@@ -80,16 +91,8 @@ def install_venv(venv_name, path, __PYTHONVENVS_DIR):
         shell=True,
         executable='/bin/bash',
     )
-    HOME = os.environ['HOME']
-    # requirements_path = os.environ['PYTHONVENVS_DIR'] + '/venvs/' + venv_name
-    requirements_path = __PYTHONVENVS_DIR + '/venvs/' + venv_name
-    # subprocess.run(
-    #     f'source {HOME}/.bashrc; source {HOME}/.poetry/env; source {venv_name}/bin/activate; cd {requirements_path}; poetry install',
-    #     shell=True,
-    #     executable='/bin/bash',
-    # )
     subprocess.run(
-        f'source {venv_name}/bin/activate; cd {requirements_path}; poetry install',
+        f'source {venv_name}/bin/activate; cd {git_repo_path}; poetry install',
         shell=True,
         executable='/bin/bash',
     )
@@ -108,33 +111,37 @@ def install_venv(venv_name, path, __PYTHONVENVS_DIR):
     # print(proc_stdout)
 
 
-def set_project_path(path=None, config_name='config.json'):
+def set_project_path(path=None):
     if path is None:
         path = os.getcwd()
-    location = {'location': f'{path}'}
-    with open(config_name, 'w') as location_json:
-        json.dump(location, location_json)
+    return path
+
+
+def create_config(config_name='config.json'):
+    config = {}
+    config['location'] = set_project_path()
+    HOME = os.environ['HOME']
+    config['venvs_dir'] = make_venv_base_dir(f'{HOME}')
+
+    with open(config_name, 'w') as config_json:
+        json.dump(config, config_json)
     return 0
 
 
 def main():
     if not os.path.isfile('config.json'):
         install_poetry()
-        # subprocess.run(
-        #     'bash {PWD}/set_location.sh'.format(PWD=os.getcwd()),
-        #     shell=True,
-        #     executable='/bin/bash',
-        # )
-        set_project_path()
-        print('\n#Please run\n# source $HOME/.bashrc\n')
+        create_config()
+        print('\n# Please run\n# source $HOME/.bashrc\n')
         exit(0)
     else:
         with open('config.json') as config:
-            __PYTHONVENVS_DIR__ = json.load(config)['location']
+            config_data = json.load(config)
+            __PYTHONVENVS_DIR__ = config_data['location']
+            venvs_dir_path = config_data['venvs_dir']
 
-    # FIXME: Temporary test path
-    HOME = os.environ['HOME']
-    venvs_dir_path = make_venv_base_dir(f'{HOME}/test')
+    # TODO: Add checks to json load to make sure environment is real
+    # Is the location a Git repo? Does venvs_dir_path have a venvs dir?
 
     install_venv('data-science', venvs_dir_path, __PYTHONVENVS_DIR=__PYTHONVENVS_DIR__)
 
