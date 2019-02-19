@@ -132,11 +132,11 @@ def create_config(config_name='config.json'):
 
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
-def pythonvenvs():
+def gitpyvenvs():
     pass
 
 
-@pythonvenvs.command()
+@gitpyvenvs.command()
 def install():
     if not os.path.isfile('config.json'):
         install_poetry()
@@ -150,7 +150,7 @@ def install():
     exit(0)
 
 
-@pythonvenvs.command()
+@gitpyvenvs.command()
 @click.argument('venv_name', default='-')
 def addvenv(venv_name):
     if not os.path.isfile('config.json'):
@@ -166,7 +166,7 @@ def addvenv(venv_name):
     install_venv(venv_name, venvs_dir_path, __PYTHONVENVS_DIR=__PYTHONVENVS_DIR__)
 
 
-@pythonvenvs.command()
+@gitpyvenvs.command()
 def config():
     if not os.path.isfile('config.json'):
         install()
@@ -183,4 +183,4 @@ def config():
 
 
 if __name__ == '__main__':
-    pythonvenvs()
+    gitpyvenvs()
