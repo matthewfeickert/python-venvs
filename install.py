@@ -4,6 +4,7 @@ import os
 import subprocess
 import pathlib
 import json
+import click
 
 
 def install_poetry():
@@ -130,13 +131,30 @@ def create_config(config_name='config.json'):
     return 0
 
 
-def main():
+@click.group(context_settings=dict(help_option_names=['-h', '--help']))
+def pythonvenvs():
+    pass
+
+
+@pythonvenvs.command()
+def install():
     if not os.path.isfile('config.json'):
         install_poetry()
         create_config()
         # TODO: Add check for this first
         print('\n# Please run: source $HOME/.bashrc\n')
-        exit(0)
+    else:
+        print(
+            '\n# Poetry is already installed and config.json exists.\n  Nothing to do, so exiting.\n'
+        )
+    exit(0)
+
+
+@pythonvenvs.command()
+@click.argument('venv_name', default='-')
+def addvenv(venv_name):
+    if not os.path.isfile('config.json'):
+        install()
     else:
         with open('config.json') as config:
             config_data = json.load(config)
@@ -145,9 +163,24 @@ def main():
 
     # TODO: Add checks to json load to make sure environment is real
     # Is the location a Git repo? Does venvs_dir_path have a venvs dir?
+    install_venv(venv_name, venvs_dir_path, __PYTHONVENVS_DIR=__PYTHONVENVS_DIR__)
 
-    install_venv('data-science', venvs_dir_path, __PYTHONVENVS_DIR=__PYTHONVENVS_DIR__)
+
+@pythonvenvs.command()
+def config():
+    if not os.path.isfile('config.json'):
+        install()
+    else:
+        with open('config.json') as config:
+            config_data = json.load(config)
+            __PYTHONVENVS_DIR__ = config_data['location']
+            venvs_dir_path = config_data['venvs_dir']
+
+    print('\n###')
+    print(f'* Location of python-venvs Git repo: {__PYTHONVENVS_DIR__}')
+    print(f'* Location of venv base directory: {venvs_dir_path}')
+    exit(0)
 
 
 if __name__ == '__main__':
-    main()
+    pythonvenvs()
