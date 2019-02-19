@@ -3,6 +3,7 @@
 import os
 import subprocess
 import pathlib
+import json
 
 
 def install_poetry():
@@ -16,7 +17,7 @@ def install_poetry():
     except subprocess.CalledProcessError as e:
         print('# Installing Poetry\n')
         print(
-            '# curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python3'
+            '## curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python3'
         )
         # Need to split response across
         command_curl_poetry = 'curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py'.split()
@@ -34,7 +35,9 @@ def install_poetry():
         curl_poetry.stdout.close()
         install_poetry.communicate()
 
-        print('\nRun: source {HOME}/.poetry/env'.format(HOME=os.environ['HOME']))
+        HOME = os.environ['HOME']
+        with open(f'{HOME}/.bashrc', 'a') as bashrc:
+            bashrc.write(f'\n# Added for Poetry\nsource {HOME}/.poetry/env\n')
     return 0
 
 
@@ -64,32 +67,33 @@ def create_venv(venv_name, path):
         path `str`
     """
     os.chdir(path)
-    command = 'python3 -m venv {venv_name}'.format(venv_name=venv_name).split()
+    command = f'python3 -m venv {venv_name}'.split()
     subprocess.run(command)
 
 
-def install_venv(venv_name, path):
+def install_venv(venv_name, path, __PYTHONVENVS_DIR):
+    create_venv(venv_name, path)
+
     os.chdir(path)
     subprocess.run(
-        'source {venv_name}/bin/activate; pip install --upgrade pip setuptools wheel'.format(
-            venv_name=venv_name
-        ),
+        f'source {venv_name}/bin/activate; pip install --upgrade pip setuptools wheel',
         shell=True,
         executable='/bin/bash',
     )
+    HOME = os.environ['HOME']
+    # requirements_path = os.environ['PYTHONVENVS_DIR'] + '/venvs/' + venv_name
+    requirements_path = __PYTHONVENVS_DIR + '/venvs/' + venv_name
+    # subprocess.run(
+    #     f'source {HOME}/.bashrc; source {HOME}/.poetry/env; source {venv_name}/bin/activate; cd {requirements_path}; poetry install',
+    #     shell=True,
+    #     executable='/bin/bash',
+    # )
     subprocess.run(
-        'source {venv_name}/bin/activate; pip install -r {requirements_path}/requirements.txt'.format(
-            venv_name=venv_name,
-            requirements_path='/{base}/venvs/data-science'.format(base='test'),
-        ),
+        f'source {venv_name}/bin/activate; cd {requirements_path}; poetry install',
         shell=True,
         executable='/bin/bash',
     )
-    subprocess.run(
-        'source {venv_name}/bin/activate; pip freeze'.format(venv_name=venv_name),
-        shell=True,
-        executable='/bin/bash',
-    )
+
     # command = 'source {venv_name}/bin/activate ; pip --version ; pip install --upgrade pip setuptools wheel ; pip freeze'.format(venv_name=venv_name).split()
     # print(command)
     # subprocess.run(command,
@@ -104,13 +108,35 @@ def install_venv(venv_name, path):
     # print(proc_stdout)
 
 
+def set_project_path(path=None, config_name='config.json'):
+    if path is None:
+        path = os.getcwd()
+    location = {'location': f'{path}'}
+    with open(config_name, 'w') as location_json:
+        json.dump(location, location_json)
+    return 0
+
+
 def main():
-    # venvs_dir_path = make_venv_base_dir('test')
-    # venvs_dir_path = make_venv_base_dir('~/test')
-    install_poetry()
-    venvs_dir_path = make_venv_base_dir('/data/test')
-    create_venv('data-science', venvs_dir_path)
-    install_venv('data-science', venvs_dir_path)
+    if not os.path.isfile('config.json'):
+        install_poetry()
+        # subprocess.run(
+        #     'bash {PWD}/set_location.sh'.format(PWD=os.getcwd()),
+        #     shell=True,
+        #     executable='/bin/bash',
+        # )
+        set_project_path()
+        print('\n#Please run\n# source $HOME/.bashrc\n')
+        exit(0)
+    else:
+        with open('config.json') as config:
+            __PYTHONVENVS_DIR__ = json.load(config)['location']
+
+    # FIXME: Temporary test path
+    HOME = os.environ['HOME']
+    venvs_dir_path = make_venv_base_dir(f'{HOME}/test')
+
+    install_venv('data-science', venvs_dir_path, __PYTHONVENVS_DIR=__PYTHONVENVS_DIR__)
 
 
 if __name__ == '__main__':
